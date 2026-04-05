@@ -14,7 +14,7 @@ Currently included:
 Clone this repository into your `ComfyUI/custom_nodes` directory:
 
 ```bash
-git clone https://github.com/<your-user>/ComfyUI-PepeUtils.git
+git clone https://github.com/Pepehoschi/ComfyUI-PepeUtils.git
 ```
 
 ### Option 2: Download ZIP

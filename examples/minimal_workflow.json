@@ -1,0 +1,122 @@
+{
+  "id": "c2e3f7d1-6c37-4c84-9f46-6d2460bb0e01",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImageCropped",
+      "pos": [
+        80,
+        80
+      ],
+      "size": [
+        315,
+        246
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": []
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": []
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-PepeUtils",
+        "ver": "0.1.0",
+        "Node name for S&R": "LoadImageCropped"
+      },
+      "widgets_values": [
+        "example.png",
+        "image",
+        0,
+        0,
+        512,
+        512
+      ]
+    },
+    {
+      "id": 2,
+      "type": "StrideScaleSize",
+      "pos": [
+        470,
+        80
+      ],
+      "size": [
+        320,
+        170
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "scaled_width",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "scaled_height",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "chosen_side",
+          "type": "INT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-PepeUtils",
+        "ver": "0.1.0",
+        "Node name for S&R": "StrideScaleSize"
+      },
+      "widgets_values": [
+        512,
+        512,
+        1.0,
+        8,
+        "down",
+        "longest",
+        true
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8914045407879866,
+      "offset": [
+        -8.0,
+        42.0
+      ]
+    },
+    "frontendVersion": "1.34.9",
+    "workflowRendererVersion": "LG"
+  },
+  "version": 0.4
+}

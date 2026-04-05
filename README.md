@@ -7,6 +7,10 @@ Currently included:
 - **Load Image Cropped** - loads an image and returns a cropped image + mask, with an interactive crop preview in the ComfyUI frontend.
 - **Stride Scale Size** - computes width/height snapped to a chosen stride after scaling.
 
+## Node Screenshots
+
+![ComfyUI-PepeUtils nodes](assets/nodes.png)
+
 ## Installation
 
 ### Option 1: Git clone
@@ -46,7 +50,6 @@ Category: `image`
 Inputs:
 
 - `image`
-- `x1`, `y1`, `x2`, `y2`
 
 Outputs:
 
@@ -65,7 +68,7 @@ What it does:
 Frontend behavior:
 
 - Includes an interactive crop preview.
-- Hidden crop widgets are updated from the preview.
+- Internal crop coordinates are updated from the preview.
 - Supports dragging a file onto the node to upload/select an image.
 - Includes a **Clear Crop** context-menu action.
 
@@ -106,6 +109,8 @@ What it does:
 ComfyUI-PepeUtils/
 ├─ LICENSE
 ├─ __init__.py
+├─ assets/
+│  └─ nodes.png
 ├─ LoadImageCropped.py
 ├─ StrideScaleSize.py
 ├─ examples/
@@ -130,14 +135,6 @@ Notes:
 - Set the image filename in the workflow to a file that exists in your ComfyUI input folder.
 - The two nodes are intentionally shown as simple standalone examples; `StrideScaleSize` uses numeric widget values rather than being wired from another node.
 
-## Publish Status / Missing Nice-to-Haves
-
-Before public GitHub release, these would improve the project:
-
-- screenshots or GIFs for the crop UI
-- release/version metadata
-- optional tests
-
 ## Development Notes
 
 Files that should not be published as source artifacts are ignored in `.gitignore`, including:
@@ -148,6 +145,4 @@ Files that should not be published as source artifacts are ignored in `.gitignor
 
 ## License
 
-This project now includes a `LICENSE` file using **GNU GPL v3**.
-
-Recommendation: GPL v3 is the safest default here because this custom node appears to reuse and adapt ComfyUI-style node implementation patterns, and it keeps the project aligned with the broader ComfyUI licensing model.
+GNU GPL v3

@@ -6,6 +6,8 @@ Currently included:
 
 - **Anime PromptGen** - generates anime prompt text with the FredZhang7 GPT-2 prompt generator or a compatible local GGUF file through Transformers.
 - **Load Image Cropped** - loads an image and returns a cropped image + mask, with an interactive crop preview in the ComfyUI frontend.
+- **Pepe Paste Image** - pastes a clipboard image into a selected node and keeps it only in ComfyUI's temporary storage.
+- **Pepe Resize Image** - resizes, crops, pads, or pillarboxes images with automatic Lanczos upscale and Pepe Bicubic Sharper downscale selection.
 - **Pepe Scale Image By** - scales images with a Photoshop Bicubic Sharper style approximation based on configurable cubic resampling.
 - **Stride Scale Size** - computes width/height snapped to a chosen stride after scaling.
 
@@ -136,6 +138,29 @@ Notes:
 - If the crop is invalid or empty, it falls back to the full image.
 - Crop coordinates are clamped to the image bounds.
 
+### Pepe Paste Image
+
+Category: `image`
+
+Outputs:
+
+- `image`
+- `mask`
+
+What it does:
+
+- Select the node and press `Ctrl+V` to paste an image from the system clipboard.
+- Alternatively, click **Paste image from clipboard**.
+- Shows a preview and the pasted image dimensions.
+- Uploads clipboard images only to `ComfyUI/temp/pepeutils/paste-image`.
+
+Notes:
+
+- Pasted files are removed by ComfyUI when it starts and when it shuts down normally.
+- A saved workflow retains the temporary filename, not the image itself. Paste the image again after restarting ComfyUI.
+- The clipboard button depends on browser clipboard permission. `Ctrl+V` remains available when direct clipboard access is unavailable.
+- Exactly one Pepe Paste Image node must be selected for the `Ctrl+V` shortcut.
+
 ### Pepe Scale Image By
 
 Category: `utils/image`
@@ -170,6 +195,46 @@ Notes:
 - This is not guaranteed to be pixel-identical to Photoshop. Boundary handling, rounding, and exact clamping behavior are reverse-engineered approximations.
 - Manual ring-pattern tests matched Photoshop closely from scale `0.3` upward with this derived math. Below `0.25`, minor differences remain around Photoshop's exact box prepass/crop behavior.
 - Very large images or batches may be slower than ComfyUI's built-in GPU scaling because this node runs the custom resampler on CPU.
+
+### Pepe Resize Image
+
+Category: `utils/image`
+
+Inputs:
+
+- `image`
+- `width`
+- `height`
+- `keep_proportion` (`stretch`, `resize`, `pad`, `pad_edge`, `pad_edge_pixel`, `crop`, `pillarbox_blur`, `total_pixels`)
+- `pad_color_r`
+- `pad_color_g`
+- `pad_color_b`
+- `crop_position` (`center`, `top`, `bottom`, `left`, `right`)
+- `divisible_by`
+- `mask` (optional)
+
+Outputs:
+
+- `image`
+- `width`
+- `height`
+- `mask`
+
+What it does:
+
+- Provides KJNodes-style resize, pad, crop, pillarbox, and total-pixel geometry modes.
+- Automatically uses Lanczos when enlarging.
+- Automatically uses the existing Pepe Photoshop-style Bicubic Sharper path when reducing.
+- Handles mixed-axis `stretch` by shrinking first, then enlarging.
+- Applies the same geometry to optional masks with mask-safe bilinear interpolation.
+- Aligns final dimensions downward to `divisible_by`.
+
+Notes:
+
+- Width or height may be `0`; missing dimensions are derived from the source aspect ratio.
+- `pad_edge` fills padding from average edge colors.
+- `pad_edge_pixel` extends actual edge pixels.
+- `pillarbox_blur` uses a blurred cover background plus a sharp fitted foreground.
 
 ### Stride Scale Size
 
@@ -207,12 +272,15 @@ ComfyUI-PepeUtils/
 ├─ assets/
 │  └─ nodes.png
 ├─ LoadImageCropped.py
+├─ PasteImage.py
+├─ PepeResizeImage.py
 ├─ PepeScaleImageBy.py
 ├─ StrideScaleSize.py
 ├─ examples/
 │  └─ minimal_workflow.json
 └─ web/
-   └─ load_image_cropped.js
+   ├─ load_image_cropped.js
+   └─ paste_image.js
 ```
 
 ## Example Workflow

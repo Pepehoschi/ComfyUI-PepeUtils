@@ -384,6 +384,29 @@ def _scale_one(
     return np.clip(out, 0.0, 1.0)
 
 
+def scale_photoshop_bicubic_sharper(image, target_width, target_height, clamp_intermediate=True):
+    return _scale_one(
+        image,
+        target_width,
+        target_height,
+        bool(clamp_intermediate),
+        0.3999,
+        0.3999,
+        0.33,
+        "integrated",
+        "translate",
+        "source",
+        "half_pixel",
+        "none",
+        1.05,
+        -1.0,
+        1.0,
+        -1.0,
+        1.0,
+        True,
+    )
+
+
 class PepeScaleImageBy:
     @classmethod
     def INPUT_TYPES(cls):
@@ -428,25 +451,8 @@ class PepeScaleImageBy:
         output = np.empty((batch, target_height, target_width, channels), dtype=np.float32)
 
         for index in range(batch):
-            output[index] = _scale_one(
-                source[index],
-                target_width,
-                target_height,
-                bool(clamp_intermediate),
-                0.3999,
-                0.3999,
-                0.33,
-                "integrated",
-                "translate",
-                "source",
-                "half_pixel",
-                "none",
-                1.05,
-                -1.0,
-                1.0,
-                -1.0,
-                1.0,
-                True,
+            output[index] = scale_photoshop_bicubic_sharper(
+                source[index], target_width, target_height, clamp_intermediate
             )
 
         return (torch.from_numpy(output), target_width, target_height)

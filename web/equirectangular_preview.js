@@ -19,6 +19,17 @@ const DEFAULT_NODE_HEIGHT = 340;
 const VIEWER_HORIZONTAL_PADDING = 20;
 const VIEWER_BOTTOM_PADDING = 18;
 const FALLBACK_VIEWER_TOP = 48;
+const VIEW_STATE_WIDGETS = ["view_yaw", "view_pitch", "view_fov"];
+
+function hideViewStateWidgets(node) {
+    for (const name of VIEW_STATE_WIDGETS) {
+        const widget = node.widgets?.find((candidate) => candidate.name === name);
+        if (widget) {
+            widget.hidden = true;
+            widget.computeSize = () => [0, 0];
+        }
+    }
+}
 
 function getAvailableViewerWidth(node, size = node.size) {
     return Math.max(
@@ -152,9 +163,43 @@ function createViewer(node) {
     let persistTimer = 0;
     let destroyed = false;
 
+    function syncViewWidgets() {
+        const values = {
+            view_yaw: degrees(view.yaw),
+            view_pitch: degrees(view.pitch),
+            view_fov: view.fov,
+        };
+        for (const [name, value] of Object.entries(values)) {
+            const widget = node.widgets?.find((candidate) => candidate.name === name);
+            if (widget) {
+                widget.value = value;
+            }
+        }
+    }
+
+    function restoreView() {
+        const storedView = node.properties?.equirectangular_view ?? {};
+        const widgetValue = (name, fallback) => {
+            const value = Number(node.widgets?.find((candidate) => candidate.name === name)?.value);
+            return Number.isFinite(value) ? value : fallback;
+        };
+        view.yaw = Number.isFinite(storedView.yaw)
+            ? storedView.yaw
+            : widgetValue("view_yaw", degrees(DEFAULT_VIEW.yaw)) * Math.PI / 180;
+        view.pitch = Number.isFinite(storedView.pitch)
+            ? storedView.pitch
+            : widgetValue("view_pitch", degrees(DEFAULT_VIEW.pitch)) * Math.PI / 180;
+        view.fov = Number.isFinite(storedView.fov)
+            ? storedView.fov
+            : widgetValue("view_fov", DEFAULT_VIEW.fov);
+        syncViewWidgets();
+        draw();
+    }
+
     function persistView() {
         node.properties ??= {};
         node.properties.equirectangular_view = { ...view };
+        syncViewWidgets();
     }
 
     function persistViewSoon() {
@@ -289,6 +334,7 @@ function createViewer(node) {
         view.pitch = clamp(view.pitch + (event.clientY - pointerY) * sensitivity, MIN_PITCH, MAX_PITCH);
         pointerX = event.clientX;
         pointerY = event.clientY;
+        syncViewWidgets();
         draw();
     });
     const endDrag = (event) => {
@@ -311,6 +357,7 @@ function createViewer(node) {
         event.preventDefault();
         event.stopPropagation();
         view.fov = clamp(view.fov + event.deltaY * 0.04, MIN_FOV, MAX_FOV);
+        syncViewWidgets();
         persistViewSoon();
         draw();
     }, { passive: false });
@@ -336,11 +383,13 @@ function createViewer(node) {
 
     const resizeObserver = new ResizeObserver(draw);
     resizeObserver.observe(canvas);
+    syncViewWidgets();
 
     return {
         container,
         setImages,
         draw,
+        restoreView,
         resize(width, height) {
             normalWidth = Math.max(MIN_VIEWER_WIDTH, Math.round(width));
             normalHeight = Math.max(MIN_VIEWER_HEIGHT, Math.round(height));
@@ -383,6 +432,7 @@ app.registerExtension({
                 hideOnZoom: false,
             });
             this.__equirectangularWidget = widget;
+            hideViewStateWidgets(this);
             widget.computeSize = () => [MIN_VIEWER_WIDTH, MIN_VIEWER_HEIGHT];
             this.setSize([
                 Math.max(this.size?.[0] ?? 0, 340),
@@ -402,6 +452,14 @@ app.registerExtension({
             this.imageIndex = null;
             this.previewMediaType = undefined;
             this.__equirectangularViewer?.setImages(message?.images ?? []);
+            return result;
+        };
+
+        const onConfigure = nodeType.prototype.onConfigure;
+        nodeType.prototype.onConfigure = function () {
+            const result = onConfigure?.apply(this, arguments);
+            hideViewStateWidgets(this);
+            this.__equirectangularViewer?.restoreView();
             return result;
         };
 

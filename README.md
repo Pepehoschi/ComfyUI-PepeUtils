@@ -89,10 +89,13 @@ Category: `image`
 Inputs:
 
 - `image`
+- `view_width`
+- `view_height`
 
 Outputs:
 
 - `image` (unchanged pass-through)
+- `view` (the current perspective view, rendered when connected)
 
 What it does:
 
@@ -103,10 +106,12 @@ What it does:
 - **Reset** restores the default yaw, pitch, and field of view.
 - The **fullscreen** button expands the interactive view to the browser display; press **Esc** or the button again to exit.
 - Batch navigation buttons appear when the input contains multiple images.
+- The hidden yaw, pitch, and FOV values track the interactive camera and are used to render the `view` output at `view_width` × `view_height`.
 
 Notes:
 
-- Rotation and zoom affect only the preview; the output image is passed through unchanged.
+- Rotation and zoom do not alter the original `image` output; they define the perspective rendered by `view`.
+- Perspective rendering is skipped when the `view` output is not connected.
 - The viewer state is stored with the node in the workflow.
 - The input should normally use a 2:1 equirectangular image for correct spherical proportions.
 - The preview is encoded through ComfyUI's temporary image directory and is not saved persistently.

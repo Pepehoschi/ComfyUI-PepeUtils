@@ -1,6 +1,9 @@
 from .AnimePromptGen import AnimePromptGen
+from .EquirectangularPreview import EquirectangularPreview
 from .LoadImageCropped import LoadImageCropped
 from .PasteImage import PasteImage
+from .PepeImageFilter import PepeImageFilter
+from .PepeLazyRoute import PepeLazyRoute, PepeRouteSplit
 from .PepeResizeImage import PepeResizeImage
 from .PepeScaleImageBy import PepeScaleImageBy
 from .StrideScaleSize import StrideScaleSize
@@ -9,8 +12,12 @@ WEB_DIRECTORY = "./web"
 
 NODE_CLASS_MAPPINGS = {
     "AnimePromptGen": AnimePromptGen,
+    "EquirectangularPreview": EquirectangularPreview,
     "LoadImageCropped": LoadImageCropped,
     "PasteImage": PasteImage,
+    "PepeImageFilter": PepeImageFilter,
+    "PepeLazyRoute": PepeLazyRoute,
+    "PepeRouteSplit": PepeRouteSplit,
     "PepeResizeImage": PepeResizeImage,
     "PepeScaleImageBy": PepeScaleImageBy,
     "StrideScaleSize": StrideScaleSize,
@@ -18,8 +25,12 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "AnimePromptGen": "Anime PromptGen",
+    "EquirectangularPreview": "Pepe Equirectangular Preview",
     "LoadImageCropped": "Load Image Cropped",
     "PasteImage": "Pepe Paste Image",
+    "PepeImageFilter": "Pepe Image Filter",
+    "PepeLazyRoute": "Pepe Lazy Route",
+    "PepeRouteSplit": "Pepe Route Split",
     "PepeResizeImage": "Pepe Resize Image",
     "PepeScaleImageBy": "Pepe Scale Image By",
     "StrideScaleSize": "Stride Scale Size",

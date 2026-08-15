@@ -5,8 +5,12 @@ Small utility nodes for [ComfyUI](https://github.com/comfyanonymous/ComfyUI).
 Currently included:
 
 - **Anime PromptGen** - generates anime prompt text with the FredZhang7 GPT-2 prompt generator or a compatible local GGUF file through Transformers.
+- **Pepe Equirectangular Preview** - interactively previews LDR Lat-Long panoramas with mouse rotation, wheel zoom, and fullscreen viewing.
 - **Load Image Cropped** - loads an image and returns a cropped image + mask, with an interactive crop preview in the ComfyUI frontend.
 - **Pepe Paste Image** - pastes a clipboard image into a selected node and keeps it only in ComfyUI's temporary storage.
+- **Pepe Image Filter** - pauses a workflow and lets you select which images from a batch continue, with matching latent and mask passthrough.
+- **Pepe Lazy Route** - selects one of eight inputs without evaluating the unselected branches.
+- **Pepe Route Split** - starts one of eight routes and blocks the other routes, including independent Save/Preview paths.
 - **Pepe Resize Image** - resizes, crops, pads, or pillarboxes images with automatic Lanczos upscale and Pepe Bicubic Sharper downscale selection.
 - **Pepe Scale Image By** - scales images with a Photoshop Bicubic Sharper style approximation based on configurable cubic resampling.
 - **Stride Scale Size** - computes width/height snapped to a chosen stride after scaling.
@@ -35,6 +39,22 @@ ComfyUI/custom_nodes/ComfyUI-PepeUtils
 
 Then restart ComfyUI.
 
+## Pepe Image Filter
+
+Connect an image batch and queue the workflow. The node opens an interactive image grid where you can select one or more images, zoom for inspection, and send the selection onward. When provided, matching latent samples and masks are selected with the images. The three optional extra text values are also editable in the selection popup.
+
+Enable `equirectangular_projection` to open still-image candidates directly in an interactive panorama viewer. Drag to look around, use the mouse wheel to adjust the field of view, and use the arrow buttons or keyboard arrows to compare candidates while keeping the same viewing direction. **Select/Unselect** (or **Enter**) toggles the current candidate, **Grid** or **Esc** returns to the flat overview, **Reset** restores the default view, and the fullscreen button expands the projection. Grouped video previews (`video_frames > 1`) continue to use the existing flat animated view.
+
+`pick_list` bypasses the popup with comma-separated image indices. `pick_list_start` controls the numbering returned by the `indexes` output, and `video_frames` groups consecutive frames into selectable clips. The timeout action can cancel processing or send all, the first, or the last item.
+
+For interactive flow control, enter up to eight button labels in the multiline `choices` input, one per line. It defaults to a single **Proceed** choice. Clicking a choice sends the selected images and returns both its zero-based `choice_index` and its `choice_name`. If `choices` is cleared, the popup keeps its original **Send** behavior. `default_choice` is used by timeout, `pick_list`, identical-image autosend, and other automatic sends.
+
+Connect `choice_index` to **Pepe Lazy Route**, then connect each possible branch result to the correspondingly numbered `choice_0` through `choice_7` input. The router asks ComfyUI to evaluate only the selected input, so expensive unselected branches such as an additional sampling pass are skipped. All branch results connected to one router should have compatible types.
+
+Use **Pepe Route Split** instead when routes end independently—for example, when each route has its own Save Image, Preview Image, or other output node. Connect the selected image (or other shared value) to `input`, connect the Image Filter's `choice_index`, and start each branch from the matching `choice_0` through `choice_7` output. The split passes only the selected output and sends silent execution blockers through all others. A lazy merge alone cannot suppress a Save/Preview node elsewhere in the graph because ComfyUI schedules every output node as a separate terminal path.
+
+This node is derived from [cg-image-filter](https://github.com/chrisgoringe/cg-image-filter) by Chris Goringe. Its Apache-2.0 license and attribution are retained under `third_party/cg-image-filter`.
+
 ## Requirements
 
 No extra setup is currently documented beyond a normal ComfyUI installation.
@@ -61,6 +81,35 @@ ComfyUI/models/LLM/GGUF
 After restarting ComfyUI, files in that folder appear in the `gguf_model` dropdown. You can also paste an absolute `.gguf` path into `gguf_file_path`.
 
 ## Included Nodes
+
+### Pepe Equirectangular Preview
+
+Category: `image`
+
+Inputs:
+
+- `image`
+
+Outputs:
+
+- `image` (unchanged pass-through)
+
+What it does:
+
+- Interprets a regular ComfyUI LDR `IMAGE` as an equirectangular/Lat-Long panorama.
+- Renders an interactive perspective view directly inside the node using WebGL 2.
+- Dragging rotates the view horizontally and vertically.
+- The mouse wheel changes the field of view.
+- **Reset** restores the default yaw, pitch, and field of view.
+- The **fullscreen** button expands the interactive view to the browser display; press **Esc** or the button again to exit.
+- Batch navigation buttons appear when the input contains multiple images.
+
+Notes:
+
+- Rotation and zoom affect only the preview; the output image is passed through unchanged.
+- The viewer state is stored with the node in the workflow.
+- The input should normally use a 2:1 equirectangular image for correct spherical proportions.
+- The preview is encoded through ComfyUI's temporary image directory and is not saved persistently.
 
 ### Anime PromptGen
 
@@ -271,16 +320,27 @@ ComfyUI-PepeUtils/
 ├─ AnimePromptGen.py
 ├─ assets/
 │  └─ nodes.png
+├─ EquirectangularPreview.py
 ├─ LoadImageCropped.py
 ├─ PasteImage.py
+├─ PepeImageFilter.py
+├─ pepe_image_filter_messaging.py
 ├─ PepeResizeImage.py
 ├─ PepeScaleImageBy.py
 ├─ StrideScaleSize.py
 ├─ examples/
 │  └─ minimal_workflow.json
+├─ third_party/
+│  └─ cg-image-filter/
+│     ├─ LICENSE
+│     └─ NOTICE.md
 └─ web/
+   ├─ equirectangular_preview.js
+   ├─ panorama_renderer.js
    ├─ load_image_cropped.js
-   └─ paste_image.js
+   ├─ paste_image.js
+   └─ pepe_image_filter/
+      └─ image_filter.js (plus supporting UI assets)
 ```
 
 ## Example Workflow

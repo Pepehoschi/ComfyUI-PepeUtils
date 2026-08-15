@@ -1,0 +1,113 @@
+
+.cg_popup .zoomed {
+    position: absolute;
+    width: 100%;
+    left: 0;
+    height: 100%;
+    right: 0;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    z-index: 120000;
+    background-color: rgba(29, 29, 29, 0.886);
+}
+
+.cg_popup .zoomed_prev, .zoomed_next {
+    flex-grow: 1;
+
+}
+
+.cg_popup .zoomed_prev {
+    text-align: right;
+}
+
+.cg_popup .zoomed_arrow {
+    font-size: 48px;
+    border-radius: 40px;
+    padding: 0px 8px 4px 8px;
+    margin: 6px;
+    border: 1px solid rgb(128, 128, 128, 1.0);
+}
+
+.cg_popup .zoomed_arrow:hover {
+    border: 1px solid rgb(255, 128, 128, 1.0);
+}
+
+
+.cg_popup .zoomed_image {
+    max-width: calc(100% - 140px);
+    height: 100%;
+    object-fit: contain;
+    border: 1px solid white;
+    padding: 4px;
+    transform-origin: center center;
+    touch-action: none;
+}
+
+.cg_popup .zoomed.pan_zoom {
+    cursor: grab;
+}
+
+.cg_popup .zoomed.pan_zoom .zoomed_image {
+    cursor: grab;
+}
+
+.cg_popup .zoomed.pan_zoom .zoomed_image:active {
+    cursor: grabbing;
+}
+
+.cg_popup .zoomed_number {
+    position: absolute;
+    top: 12px;
+    margin-left: 12px;
+    color: white;
+    padding: 10px 8px 8px 8px;
+    border-radius: 4px;
+    z-index: 110000;
+    background-color: rgba(128, 128, 128, 0.5);
+    border: 1px solid rgba(128, 128, 128, 1.0);
+}
+
+.cg_popup .zoomed.highlighted .zoomed_image {
+    border: 3px solid green;
+    padding: 2px;
+}
+
+.cg_popup .projected {
+    position: absolute;
+    inset: 0;
+    z-index: 120000;
+    display: flex;
+    flex-direction: column;
+    background: #0e0e12;
+}
+
+.cg_popup .projected_toolbar {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    box-sizing: border-box;
+    background: #202027;
+    border-bottom: 1px solid #414149;
+}
+
+.cg_popup .projected_status {
+    flex: 1;
+    color: #bdbdc7;
+    font: 12px sans-serif;
+}
+
+.cg_popup .projected_canvas {
+    display: block;
+    width: 100%;
+    height: calc(100% - 40px);
+    min-height: 0;
+    cursor: grab;
+    touch-action: none;
+}
+
+.cg_popup .projection_warning {
+    color: #ffb36b;
+}

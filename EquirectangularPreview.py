@@ -67,43 +67,19 @@ class EquirectangularPreview(PreviewImage):
         return False
 
     @staticmethod
-    def render_view(image, width, height, yaw, pitch, fov):
-        """Project a ComfyUI IMAGE batch with the same camera math as the WebGL viewer."""
-        width = int(width)
-        height = int(height)
-        if width < 1 or height < 1:
-            raise ValueError("Equirectangular view dimensions must be positive")
-
+    def sample_directions(image, direction_x, direction_y, direction_z):
+        """Sample an equirectangular IMAGE batch using Cartesian camera directions."""
         device = image.device
         work = image.to(dtype=torch.float32)
-        x = ((torch.arange(width, device=device, dtype=torch.float32) + 0.5) / width) * 2.0 - 1.0
-        y = 1.0 - ((torch.arange(height, device=device, dtype=torch.float32) + 0.5) / height) * 2.0
-        point_y, point_x = torch.meshgrid(y, x, indexing="ij")
-        point_x = point_x * (width / height)
+        inverse_length = torch.rsqrt(
+            direction_x.square() + direction_y.square() + direction_z.square()
+        )
+        direction_x = direction_x * inverse_length
+        direction_y = direction_y * inverse_length
+        direction_z = direction_z * inverse_length
 
-        tangent = math.tan(math.radians(float(fov)) * 0.5)
-        ray_x = point_x * tangent
-        ray_y = point_y * tangent
-        ray_z = -torch.ones_like(ray_x)
-        inverse_length = torch.rsqrt(ray_x.square() + ray_y.square() + ray_z.square())
-        ray_x = ray_x * inverse_length
-        ray_y = ray_y * inverse_length
-        ray_z = ray_z * inverse_length
-
-        pitch_radians = math.radians(float(pitch))
-        pitch_cos = math.cos(pitch_radians)
-        pitch_sin = math.sin(pitch_radians)
-        pitched_y = pitch_cos * ray_y - pitch_sin * ray_z
-        pitched_z = pitch_sin * ray_y + pitch_cos * ray_z
-
-        yaw_radians = math.radians(float(yaw))
-        yaw_cos = math.cos(yaw_radians)
-        yaw_sin = math.sin(yaw_radians)
-        rotated_x = yaw_cos * ray_x + yaw_sin * pitched_z
-        rotated_z = -yaw_sin * ray_x + yaw_cos * pitched_z
-
-        longitude = torch.atan2(rotated_x, -rotated_z)
-        latitude = torch.asin(pitched_y.clamp(-1.0, 1.0))
+        longitude = torch.atan2(direction_x, -direction_z)
+        latitude = torch.asin(direction_y.clamp(-1.0, 1.0))
         u = torch.remainder(longitude / (2.0 * math.pi) + 0.5, 1.0)
         v = 0.5 - latitude / math.pi
 
@@ -120,6 +96,38 @@ class EquirectangularPreview(PreviewImage):
             align_corners=False,
         )
         return projected.permute(0, 2, 3, 1).to(dtype=image.dtype)
+
+    @classmethod
+    def render_view(cls, image, width, height, yaw, pitch, fov):
+        """Project a ComfyUI IMAGE batch with the same camera math as the WebGL viewer."""
+        width = int(width)
+        height = int(height)
+        if width < 1 or height < 1:
+            raise ValueError("Equirectangular view dimensions must be positive")
+
+        device = image.device
+        x = ((torch.arange(width, device=device, dtype=torch.float32) + 0.5) / width) * 2.0 - 1.0
+        y = 1.0 - ((torch.arange(height, device=device, dtype=torch.float32) + 0.5) / height) * 2.0
+        point_y, point_x = torch.meshgrid(y, x, indexing="ij")
+        point_x = point_x * (width / height)
+
+        tangent = math.tan(math.radians(float(fov)) * 0.5)
+        ray_x = point_x * tangent
+        ray_y = point_y * tangent
+        ray_z = -torch.ones_like(ray_x)
+
+        pitch_radians = math.radians(float(pitch))
+        pitch_cos = math.cos(pitch_radians)
+        pitch_sin = math.sin(pitch_radians)
+        pitched_y = pitch_cos * ray_y - pitch_sin * ray_z
+        pitched_z = pitch_sin * ray_y + pitch_cos * ray_z
+
+        yaw_radians = math.radians(float(yaw))
+        yaw_cos = math.cos(yaw_radians)
+        yaw_sin = math.sin(yaw_radians)
+        rotated_x = yaw_cos * ray_x + yaw_sin * pitched_z
+        rotated_z = -yaw_sin * ray_x + yaw_cos * pitched_z
+        return cls.sample_directions(image, rotated_x, pitched_y, rotated_z)
 
     def preview_equirectangular(
         self,

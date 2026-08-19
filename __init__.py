@@ -1,4 +1,5 @@
 from .AnimePromptGen import AnimePromptGen
+from .CubemapProjection import EquirectangularToCubemapStrip, EquirectangularToCylindrical
 from .EquirectangularPreview import EquirectangularPreview
 from .LoadImageCropped import LoadImageCropped
 from .PasteImage import PasteImage
@@ -12,6 +13,8 @@ WEB_DIRECTORY = "./web"
 
 NODE_CLASS_MAPPINGS = {
     "AnimePromptGen": AnimePromptGen,
+    "EquirectangularToCubemapStrip": EquirectangularToCubemapStrip,
+    "EquirectangularToCylindrical": EquirectangularToCylindrical,
     "EquirectangularPreview": EquirectangularPreview,
     "LoadImageCropped": LoadImageCropped,
     "PasteImage": PasteImage,
@@ -25,6 +28,8 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "AnimePromptGen": "Anime PromptGen",
+    "EquirectangularToCubemapStrip": "Pepe Equirectangular to Cubemap Strip",
+    "EquirectangularToCylindrical": "Pepe Equirectangular to Cylindrical",
     "EquirectangularPreview": "Pepe Equirectangular Preview",
     "LoadImageCropped": "Load Image Cropped",
     "PasteImage": "Pepe Paste Image",

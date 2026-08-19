@@ -6,6 +6,8 @@ Currently included:
 
 - **Anime PromptGen** - generates anime prompt text with the FredZhang7 GPT-2 prompt generator or a compatible local GGUF file through Transformers.
 - **Pepe Equirectangular Preview** - interactively previews LDR Lat-Long panoramas with mouse rotation, wheel zoom, and fullscreen viewing.
+- **Pepe Equirectangular to Cubemap Strip** - converts a panorama into a horizontally tileable strip of configurable perspective faces; four sides produce a cubemap.
+- **Pepe Equirectangular to Cylindrical** - reprojects a panorama onto a constant-radius cylinder and unrolls it into a seamless image.
 - **Load Image Cropped** - loads an image and returns a cropped image + mask, with an interactive crop preview in the ComfyUI frontend.
 - **Pepe Paste Image** - pastes a clipboard image into a selected node and keeps it only in ComfyUI's temporary storage.
 - **Pepe Image Filter** - pauses a workflow and lets you select which images from a batch continue, with matching latent and mask passthrough.
@@ -115,6 +117,64 @@ Notes:
 - The viewer state is stored with the node in the workflow.
 - The input should normally use a 2:1 equirectangular image for correct spherical proportions.
 - The preview is encoded through ComfyUI's temporary image directory and is not saved persistently.
+
+### Pepe Equirectangular to Cubemap Strip
+
+Category: `PepeUtils/image`
+
+Inputs:
+
+- `image`
+- `face_size` (width of each face; `0` divides the panorama width by `side_count`)
+- `side_count` (number of faces around the horizon; defaults to `4`)
+- `vertical_fov` (vertical field of view; defaults to `90°`)
+
+Outputs:
+
+- `cubemap_strip`
+
+What it does:
+
+- Converts an equirectangular panorama into perspective faces arranged around the horizon.
+- With four sides, produces the familiar 90-degree `front`, `right`, `back`, `left` cubemap strip.
+- With more sides, uses a narrower `360 / side_count` degree horizontal field of view for each face, approximating a smooth cylinder with progressively smaller direction changes at the boundaries.
+- Calculates the face height from `vertical_fov` so increasing `side_count` does not crop the top and bottom of the selected view.
+- Omits the top and bottom and produces an image whose final and first edges meet continuously when tiled horizontally.
+
+Notes:
+
+- Automatic sizing keeps the complete strip at the panorama width by dividing it evenly among the faces.
+- Four sides at the default 90° vertical FOV still produce the original 4:1 cubemap strip.
+- At higher side counts, faces become taller than they are wide. This preserves vertical coverage and equal pinhole-camera pixel scale instead of stretching the image.
+- The input should normally use a 2:1 equirectangular layout.
+
+### Pepe Equirectangular to Cylindrical
+
+Category: `PepeUtils/image`
+
+Inputs:
+
+- `image`
+- `output_width` (`0` preserves the panorama width)
+- `output_height` (`0` calculates square distances on the unrolled cylinder surface)
+- `max_latitude` (north/south coverage; defaults to approximately 57.52°)
+
+Outputs:
+
+- `cylindrical`
+
+What it does:
+
+- Projects the panorama onto the side of a vertical, constant-radius cylinder.
+- Unrolls the cylinder into one continuous image with seamless left/right wrapping.
+- Uses longitude for horizontal position and physical cylinder height for vertical position.
+- Keeps equal horizontal and vertical surface distances per pixel when `output_height` is `0`.
+
+Notes:
+
+- The default latitude and automatic sizing preserve the dimensions of a normal 2:1 panorama.
+- Increasing `max_latitude` includes more of the poles and increases the automatically calculated height.
+- A finite cylindrical image cannot include the exact north and south poles because their cylinder height approaches infinity.
 
 ### Anime PromptGen
 

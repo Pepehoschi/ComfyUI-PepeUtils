@@ -147,6 +147,8 @@ class Popup extends HTMLElement {
 
         document.body.appendChild(this)
         this.last_response_sent = 0
+        this.active_graph_id = null
+        this.active_request_id = null
         this.state = State.INACTIVE
         this.hidden_by_toggle = false
         this.zoom_pan_mode = false
@@ -265,7 +267,8 @@ class Popup extends HTMLElement {
             return
         }
 
-        msg.graph_id = `${app.graph.id}`
+        msg.graph_id = this.active_graph_id ?? `${app.graph.id}`
+        msg.request_id = this.active_request_id
 
         if (!msg.special) {
             if (this.n_extras>0) {
@@ -398,10 +401,10 @@ class Popup extends HTMLElement {
 
     _handle_message(message, using_saved) {
         const detail = message.detail
-        const uid = app.runningNodeId
+        const uid = detail.node_id || app.runningNodeId
 
         if (!uid) {
-            Log.log("Workflow isn't running")
+            Log.log("Pepe Image Filter message has no node id")
             return
         }
 
@@ -410,7 +413,9 @@ class Popup extends HTMLElement {
 
         if (detail.audiopath) this.audiopath = detail.audiopath
 
-        if (graph_id != app.graph.id) {
+        // Messages from the patched backend carry the authoritative node id.
+        // app.graph.id may briefly lag during frontend tab transitions.
+        if (!detail.node_id && graph_id != app.graph.id) {
             this._flash_tab(graph_id)
             Log.detail(`Message for different tab`)
             return
@@ -419,6 +424,8 @@ class Popup extends HTMLElement {
         if (!the_node) Log.log(`No node found with uid ${uid}. Maybe it's been removed. Continuing with caution`)
 
         if (this.node!=the_node) this.on_new_node(the_node)
+        this.active_graph_id = graph_id
+        this.active_request_id = detail.request_id
 
         if (detail.tick) {
             this.counter_text.innerText = `${detail.tick}s`

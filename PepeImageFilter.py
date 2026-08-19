@@ -100,6 +100,7 @@ class PepeImageFilter(PreviewImage):
                 ),
                 "graph_id": ("STRING", {"default": ""}),
             },
+            "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
     @staticmethod
@@ -159,6 +160,7 @@ class PepeImageFilter(PreviewImage):
         equirectangular_projection=False,
         audiofile="",
         graph_id="",
+        unique_id=None,
         **kwargs,
     ):
         if images is None:
@@ -193,7 +195,7 @@ class PepeImageFilter(PreviewImage):
                 "equirectangular_projection": bool(equirectangular_projection),
                 "audiopath": audiofile,
             }
-            response: Response = send_and_wait(payload, timeout, graph_id)
+            response: Response = send_and_wait(payload, timeout, graph_id, node_id=unique_id)
 
             if isinstance(response, TimeoutResponse):
                 timeout_selections = {

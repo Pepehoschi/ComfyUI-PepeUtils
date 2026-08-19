@@ -5,6 +5,7 @@ Derived from cg-image-filter by Chris Goringe, licensed under Apache-2.0.
 
 import json
 import time
+import uuid
 from typing import Optional
 
 from aiohttp import web
@@ -54,10 +55,12 @@ class RequestResponse(Response):
 class MessageState:
     _latest: Optional["MessageState"] = None
     graph_id_expected = None
+    request_id_expected = None
 
     def __init__(self, data: dict | str | None = None):
         data_dict = dict(data or {}) if isinstance(data, dict) else json.loads(data or "{}")
         self.graph_id = data_dict.pop("graph_id", None)
+        self.request_id = data_dict.pop("request_id", None)
         self.special = data_dict.pop("special", None)
         self.response = Response(**data_dict)
 
@@ -68,14 +71,16 @@ class MessageState:
         return cls._latest
 
     @classmethod
-    def start_waiting(cls, graph_id):
+    def start_waiting(cls, graph_id, request_id):
         cls._latest = cls({"special": WAITING_FOR_RESPONSE})
         cls.graph_id_expected = graph_id
+        cls.request_id_expected = request_id
 
     @classmethod
     def stop_waiting(cls):
         cls._latest = cls()
         cls.graph_id_expected = None
+        cls.request_id_expected = None
 
     @classmethod
     def waiting(cls) -> bool:
@@ -97,7 +102,11 @@ async def pepe_image_filter_message(request):
     post = await request.post()
     message = MessageState(post.get("response"))
 
-    if str(MessageState.graph_id_expected) == str(message.graph_id):
+    ids_match = (
+        str(MessageState.graph_id_expected) == str(message.graph_id)
+        and MessageState.request_id_expected == message.request_id
+    )
+    if ids_match:
         if MessageState.waiting():
             MessageState._latest = message
         else:
@@ -118,32 +127,48 @@ def register_message_route():
 register_message_route()
 
 
-def wait_for_response(seconds, graph_id) -> Response:
-    MessageState.start_waiting(graph_id)
-    try:
-        end_time = time.monotonic() + seconds
-        while time.monotonic() < end_time and MessageState.waiting():
-            throw_exception_if_processing_interrupted()
-            PromptServer.instance.send_sync(
-                "pepe-image-filter-images",
-                {"tick": int(end_time - time.monotonic()), "graph_id": graph_id},
-            )
-            time.sleep(0.5)
-        if MessageState.waiting():
-            PromptServer.instance.send_sync(
-                "pepe-image-filter-images", {"timeout": True, "graph_id": graph_id}
-            )
-        return MessageState.get_response()
-    finally:
-        MessageState.stop_waiting()
+def wait_for_response(seconds, graph_id, request_id, node_id) -> Response:
+    end_time = time.monotonic() + seconds
+    while time.monotonic() < end_time and MessageState.waiting():
+        throw_exception_if_processing_interrupted()
+        PromptServer.instance.send_sync(
+            "pepe-image-filter-images",
+            {
+                "tick": int(end_time - time.monotonic()),
+                "graph_id": graph_id,
+                "request_id": request_id,
+                "node_id": node_id,
+            },
+        )
+        time.sleep(0.5)
+    if MessageState.waiting():
+        PromptServer.instance.send_sync(
+            "pepe-image-filter-images",
+            {
+                "timeout": True,
+                "graph_id": graph_id,
+                "request_id": request_id,
+                "node_id": node_id,
+            },
+        )
+    return MessageState.get_response()
 
 
-def send_and_wait(payload, timeout, graph_id) -> Response:
+def send_and_wait(payload, timeout, graph_id, node_id=None) -> Response:
+    request_id = str(uuid.uuid4())
     payload["graph_id"] = graph_id
+    payload["request_id"] = request_id
+    payload["node_id"] = node_id
 
     while True:
-        PromptServer.instance.send_sync("pepe-image-filter-images", payload)
-        response = wait_for_response(timeout, graph_id)
+        # Arm response handling before notifying the browser. Otherwise a fast
+        # browser can reply before the backend considers itself to be waiting.
+        MessageState.start_waiting(graph_id, request_id)
+        try:
+            PromptServer.instance.send_sync("pepe-image-filter-images", payload)
+            response = wait_for_response(timeout, graph_id, request_id, node_id)
+        finally:
+            MessageState.stop_waiting()
         if isinstance(response, CancelledResponse):
             raise InterruptProcessingException()
         if not isinstance(response, RequestResponse):

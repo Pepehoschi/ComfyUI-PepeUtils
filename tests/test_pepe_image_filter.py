@@ -135,6 +135,26 @@ class PepeImageFilterTests(unittest.TestCase):
         payload = send_and_wait.call_args.args[0]
         self.assertTrue(payload["equirectangular_projection"])
 
+    def test_popup_message_targets_the_executing_node(self):
+        images = torch.zeros((1, 2, 4, 3))
+        response = filter_module.Response(selection=["0"])
+
+        with mock.patch.object(PepeImageFilter, "save_images") as save_images:
+            save_images.return_value = {
+                "ui": {"images": [{"filename": "0.png", "type": "temp", "subfolder": ""}]}
+            }
+            with mock.patch.object(filter_module, "send_and_wait", return_value=response) as send_and_wait:
+                PepeImageFilter.filter_images(
+                    images,
+                    timeout=10,
+                    ontimeout="send none",
+                    graph_id="graph-a",
+                    unique_id="node-42",
+                )
+
+        self.assertEqual(send_and_wait.call_args.kwargs["node_id"], "node-42")
+        self.assertEqual(send_and_wait.call_args.args[2], "graph-a")
+
     def test_popup_choice_is_returned_with_its_label(self):
         images = torch.zeros((1, 2, 4, 3))
         response = filter_module.Response(selection=["0"], choice_index=1)
@@ -209,6 +229,8 @@ class PepeImageFilterTests(unittest.TestCase):
             popup_source,
         )
         self.assertIn("this._send_response({choice_index:choice_index})", popup_source)
+        self.assertIn("const uid = detail.node_id || app.runningNodeId", popup_source)
+        self.assertIn("msg.request_id = this.active_request_id", popup_source)
 
 
 if __name__ == "__main__":

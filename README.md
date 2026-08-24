@@ -10,6 +10,7 @@ Currently included:
 - **Pepe Equirectangular to Cylindrical** - reprojects a panorama onto a constant-radius cylinder and unrolls it into a seamless image.
 - **Load Image Cropped** - loads an image and returns a cropped image + mask, with an interactive crop preview in the ComfyUI frontend.
 - **Pepe Paste Image** - pastes a clipboard image into a selected node and keeps it only in ComfyUI's temporary storage.
+- **Pepe Load Images From Folder** - loads arbitrary local folders as synchronized image, mask, and filename lists for per-file workflows.
 - **Pepe Image Filter** - pauses a workflow and lets you select which images from a batch continue, with matching latent and mask passthrough.
 - **Pepe Lazy Route** - selects one of eight inputs without evaluating the unselected branches.
 - **Pepe Route Split** - starts one of eight routes and blocks the other routes, including independent Save/Preview paths.
@@ -274,6 +275,32 @@ Notes:
 - A saved workflow retains the temporary filename, not the image itself. Paste the image again after restarting ComfyUI.
 - The clipboard button depends on browser clipboard permission. `Ctrl+V` remains available when direct clipboard access is unavailable.
 - Exactly one Pepe Paste Image node must be selected for the `Ctrl+V` shortcut.
+
+### Pepe Load Images From Folder
+
+Category: `Pepe Utils/image`
+
+Inputs:
+
+- `folder`
+- `image_load_cap` (`0` loads every image)
+- `select_every_nth`
+
+Outputs:
+
+- `images` (list)
+- `masks` (list)
+- `file_name` (list, including each original extension)
+- `image_count`
+
+What it does:
+
+- Loads supported images from an arbitrary local folder without routing absolute paths through ComfyUI's restricted annotated-file resolver.
+- Sorts filenames case-insensitively so image, mask, and filename lists remain deterministic and synchronized.
+- Emits list outputs so downstream ComfyUI nodes process each file independently instead of receiving one tensor batch.
+- Supports BMP, GIF, JPEG, PNG, TIFF, and WebP files.
+
+For sidecar captions, send `file_name` through a regex replacement such as `\.[^.]+$` → an empty string, then connect the result and generated text to a text-saving node configured for `.txt`.
 
 ### Pepe Scale Image By
 

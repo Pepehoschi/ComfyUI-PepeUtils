@@ -3,6 +3,7 @@ from .CubemapProjection import EquirectangularToCubemapStrip, EquirectangularToC
 from .EquirectangularPreview import EquirectangularPreview
 from .LoadImageCropped import LoadImageCropped
 from .PasteImage import PasteImage
+from .PepeLoadImagesFromFolder import PepeLoadImagesFromFolder
 from .PepeImageFilter import PepeImageFilter
 from .PepeLazyRoute import PepeLazyRoute, PepeRouteSplit
 from .PepeResizeImage import PepeResizeImage
@@ -18,6 +19,7 @@ NODE_CLASS_MAPPINGS = {
     "EquirectangularPreview": EquirectangularPreview,
     "LoadImageCropped": LoadImageCropped,
     "PasteImage": PasteImage,
+    "PepeLoadImagesFromFolder": PepeLoadImagesFromFolder,
     "PepeImageFilter": PepeImageFilter,
     "PepeLazyRoute": PepeLazyRoute,
     "PepeRouteSplit": PepeRouteSplit,
@@ -33,6 +35,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "EquirectangularPreview": "Pepe Equirectangular Preview",
     "LoadImageCropped": "Load Image Cropped",
     "PasteImage": "Pepe Paste Image",
+    "PepeLoadImagesFromFolder": "Pepe Load Images From Folder",
     "PepeImageFilter": "Pepe Image Filter",
     "PepeLazyRoute": "Pepe Lazy Route",
     "PepeRouteSplit": "Pepe Route Split",

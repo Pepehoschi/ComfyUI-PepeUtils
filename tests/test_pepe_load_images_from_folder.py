@@ -44,6 +44,9 @@ class PepeLoadImagesFromFolderTests(unittest.TestCase):
             "Image folder is required.",
         )
 
+    def test_defers_validation_for_a_connected_folder_input(self):
+        self.assertIs(PepeLoadImagesFromFolder.VALIDATE_INPUTS(None), True)
+
     def test_loads_absolute_folder_in_filename_order(self):
         with tempfile.TemporaryDirectory() as directory:
             root = pathlib.Path(directory)

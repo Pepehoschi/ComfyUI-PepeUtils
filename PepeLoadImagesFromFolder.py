@@ -20,6 +20,8 @@ SUPPORTED_IMAGE_EXTENSIONS = {
 
 
 def _resolve_folder(folder):
+    if folder is None:
+        raise ValueError("Image folder is required.")
     value = str(folder).strip()
     if not value:
         raise ValueError("Image folder is required.")
@@ -117,6 +119,10 @@ class PepeLoadImagesFromFolder:
 
     @classmethod
     def VALIDATE_INPUTS(cls, folder, image_load_cap=0, select_every_nth=1):
+        # Linked inputs are unavailable during ComfyUI's pre-execution validation.
+        # The resolved value is still checked by load_images before any files are read.
+        if folder is None:
+            return True
         try:
             root = _resolve_folder(folder)
         except ValueError as error:

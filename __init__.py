@@ -3,9 +3,11 @@ from .CubemapProjection import EquirectangularToCubemapStrip, EquirectangularToC
 from .EquirectangularPreview import EquirectangularPreview
 from .LoadImageCropped import LoadImageCropped
 from .PasteImage import PasteImage
-from .PepeLoadImagesFromFolder import PepeLoadImagesFromFolder
+from .PepeBreak import PepeBreak
+from .PepeConsolePrint import PepeConsolePrint
 from .PepeImageFilter import PepeImageFilter
 from .PepeLazyRoute import PepeLazyRoute, PepeRouteSplit
+from .PepeLoadImagesFromFolder import PepeLoadImagesFromFolder
 from .PepeResizeImage import PepeResizeImage
 from .PepeScaleImageBy import PepeScaleImageBy
 from .StrideScaleSize import StrideScaleSize
@@ -19,9 +21,11 @@ NODE_CLASS_MAPPINGS = {
     "EquirectangularPreview": EquirectangularPreview,
     "LoadImageCropped": LoadImageCropped,
     "PasteImage": PasteImage,
-    "PepeLoadImagesFromFolder": PepeLoadImagesFromFolder,
+    "PepeBreak": PepeBreak,
+    "PepeConsolePrint": PepeConsolePrint,
     "PepeImageFilter": PepeImageFilter,
     "PepeLazyRoute": PepeLazyRoute,
+    "PepeLoadImagesFromFolder": PepeLoadImagesFromFolder,
     "PepeRouteSplit": PepeRouteSplit,
     "PepeResizeImage": PepeResizeImage,
     "PepeScaleImageBy": PepeScaleImageBy,
@@ -35,9 +39,11 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "EquirectangularPreview": "Pepe Equirectangular Preview",
     "LoadImageCropped": "Load Image Cropped",
     "PasteImage": "Pepe Paste Image",
-    "PepeLoadImagesFromFolder": "Pepe Load Images From Folder",
+    "PepeBreak": "Pepe Break",
+    "PepeConsolePrint": "Pepe Console Print",
     "PepeImageFilter": "Pepe Image Filter",
     "PepeLazyRoute": "Pepe Lazy Route",
+    "PepeLoadImagesFromFolder": "Pepe Load Images From Folder",
     "PepeRouteSplit": "Pepe Route Split",
     "PepeResizeImage": "Pepe Resize Image",
     "PepeScaleImageBy": "Pepe Scale Image By",

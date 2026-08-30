@@ -10,9 +10,11 @@ Currently included:
 - **Pepe Equirectangular to Cylindrical** - reprojects a panorama onto a constant-radius cylinder and unrolls it into a seamless image.
 - **Load Image Cropped** - loads an image and returns a cropped image + mask, with an interactive crop preview in the ComfyUI frontend.
 - **Pepe Paste Image** - pastes a clipboard image into a selected node and keeps it only in ComfyUI's temporary storage.
-- **Pepe Load Images From Folder** - loads arbitrary local folders as synchronized image, mask, and filename lists for per-file workflows.
+- **Pepe Break** - toggles a workflow branch between lazy passthrough and cleanly blocked execution.
+- **Pepe Console Print** - prints a configurable message to the ComfyUI server console and passes any input through unchanged.
 - **Pepe Image Filter** - pauses a workflow and lets you select which images from a batch continue, with matching latent and mask passthrough.
 - **Pepe Lazy Route** - selects one of eight inputs without evaluating the unselected branches.
+- **Pepe Load Images From Folder** - loads arbitrary local folders as synchronized image, mask, and filename lists for per-file workflows.
 - **Pepe Route Split** - starts one of eight routes and blocks the other routes, including independent Save/Preview paths.
 - **Pepe Resize Image** - resizes, crops, pads, or pillarboxes images with automatic Lanczos upscale and Pepe Bicubic Sharper downscale selection.
 - **Pepe Scale Image By** - scales images with a Photoshop Bicubic Sharper style approximation based on configurable cubic resampling.
@@ -176,6 +178,50 @@ Notes:
 - The default latitude and automatic sizing preserve the dimensions of a normal 2:1 panorama.
 - Increasing `max_latitude` includes more of the poles and increases the automatically calculated height.
 - A finite cylindrical image cannot include the exact north and south poles because their cylinder height approaches infinity.
+
+### Pepe Break
+
+Category: `PepeUtils/flow`
+
+Inputs:
+
+- `value` (any connected ComfyUI data type)
+- `enabled` (`CONTINUE` passes the value; `BREAK` blocks the branch)
+
+Output:
+
+- `value`
+
+What it does:
+
+- Passes its input through unchanged in `CONTINUE` mode.
+- Uses ComfyUI's silent execution blocker in `BREAK` mode, so downstream nodes on that route do not execute or report an error.
+- Treats `value` as a lazy input. If its upstream nodes are used only by this branch, they are not evaluated while the break is active.
+
+Notes:
+
+- The break affects only nodes downstream of its output. Independent workflow branches continue normally.
+- Place it before the first node of the section you want to disable.
+
+### Pepe Console Print
+
+Category: `PepeUtils/utils`
+
+Inputs:
+
+- `value` (any connected ComfyUI data type)
+- `message` (the text to print)
+- `color` (terminal text color, including standard and bright variants)
+
+Output:
+
+- `value` (the exact input value, unchanged)
+
+What it does:
+
+- Prints `message` to the terminal or CMD window running the ComfyUI server.
+- Executes on every queued workflow instead of letting ComfyUI reuse a cached print.
+- Routes images, latents, conditioning, strings, numbers, and other connected types through unchanged.
 
 ### Anime PromptGen
 

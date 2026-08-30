@@ -5,8 +5,17 @@ Small utility nodes for [ComfyUI](https://github.com/comfyanonymous/ComfyUI).
 Currently included:
 
 - **Anime PromptGen** - generates anime prompt text with the FredZhang7 GPT-2 prompt generator or a compatible local GGUF file through Transformers.
+- **Pepe Equirectangular Preview** - interactively previews LDR Lat-Long panoramas with mouse rotation, wheel zoom, and fullscreen viewing.
+- **Pepe Equirectangular to Cubemap Strip** - converts a panorama into a horizontally tileable strip of configurable perspective faces; four sides produce a cubemap.
+- **Pepe Equirectangular to Cylindrical** - reprojects a panorama onto a constant-radius cylinder and unrolls it into a seamless image.
 - **Load Image Cropped** - loads an image and returns a cropped image + mask, with an interactive crop preview in the ComfyUI frontend.
 - **Pepe Paste Image** - pastes a clipboard image into a selected node and keeps it only in ComfyUI's temporary storage.
+- **Pepe Break** - toggles a workflow branch between lazy passthrough and cleanly blocked execution.
+- **Pepe Console Print** - prints a configurable message to the ComfyUI server console and passes any input through unchanged.
+- **Pepe Image Filter** - pauses a workflow and lets you select which images from a batch continue, with matching latent and mask passthrough.
+- **Pepe Lazy Route** - selects one of eight inputs without evaluating the unselected branches.
+- **Pepe Load Images From Folder** - loads arbitrary local folders as synchronized image, mask, and filename lists for per-file workflows.
+- **Pepe Route Split** - starts one of eight routes and blocks the other routes, including independent Save/Preview paths.
 - **Pepe Resize Image** - resizes, crops, pads, or pillarboxes images with automatic Lanczos upscale and Pepe Bicubic Sharper downscale selection.
 - **Pepe Scale Image By** - scales images with a Photoshop Bicubic Sharper style approximation based on configurable cubic resampling.
 - **Stride Scale Size** - computes width/height snapped to a chosen stride after scaling.
@@ -35,6 +44,22 @@ ComfyUI/custom_nodes/ComfyUI-PepeUtils
 
 Then restart ComfyUI.
 
+## Pepe Image Filter
+
+Connect an image batch and queue the workflow. The node opens an interactive image grid where you can select one or more images, zoom for inspection, and send the selection onward. When provided, matching latent samples and masks are selected with the images. The three optional extra text values are also editable in the selection popup.
+
+Enable `equirectangular_projection` to open still-image candidates directly in an interactive panorama viewer. Drag to look around, use the mouse wheel to adjust the field of view, and use the arrow buttons or keyboard arrows to compare candidates while keeping the same viewing direction. **Select/Unselect** (or **Enter**) toggles the current candidate, **Grid** or **Esc** returns to the flat overview, **Reset** restores the default view, and the fullscreen button expands the projection. Grouped video previews (`video_frames > 1`) continue to use the existing flat animated view.
+
+`pick_list` bypasses the popup with comma-separated image indices. `pick_list_start` controls the numbering returned by the `indexes` output, and `video_frames` groups consecutive frames into selectable clips. The timeout action can cancel processing or send all, the first, or the last item.
+
+For interactive flow control, enter up to eight button labels in the multiline `choices` input, one per line. It defaults to a single **Proceed** choice. Clicking a choice sends the selected images and returns both its zero-based `choice_index` and its `choice_name`. If `choices` is cleared, the popup keeps its original **Send** behavior. `default_choice` is used by timeout, `pick_list`, identical-image autosend, and other automatic sends.
+
+Connect `choice_index` to **Pepe Lazy Route**, then connect each possible branch result to the correspondingly numbered `choice_0` through `choice_7` input. The router asks ComfyUI to evaluate only the selected input, so expensive unselected branches such as an additional sampling pass are skipped. All branch results connected to one router should have compatible types.
+
+Use **Pepe Route Split** instead when routes end independently—for example, when each route has its own Save Image, Preview Image, or other output node. Connect the selected image (or other shared value) to `input`, connect the Image Filter's `choice_index`, and start each branch from the matching `choice_0` through `choice_7` output. The split passes only the selected output and sends silent execution blockers through all others. A lazy merge alone cannot suppress a Save/Preview node elsewhere in the graph because ComfyUI schedules every output node as a separate terminal path.
+
+This node is derived from [cg-image-filter](https://github.com/chrisgoringe/cg-image-filter) by Chris Goringe. Its Apache-2.0 license and attribution are retained under `third_party/cg-image-filter`.
+
 ## Requirements
 
 No extra setup is currently documented beyond a normal ComfyUI installation.
@@ -61,6 +86,142 @@ ComfyUI/models/LLM/GGUF
 After restarting ComfyUI, files in that folder appear in the `gguf_model` dropdown. You can also paste an absolute `.gguf` path into `gguf_file_path`.
 
 ## Included Nodes
+
+### Pepe Equirectangular Preview
+
+Category: `image`
+
+Inputs:
+
+- `image`
+- `view_width`
+- `view_height`
+
+Outputs:
+
+- `image` (unchanged pass-through)
+- `view` (the current perspective view, rendered when connected)
+
+What it does:
+
+- Interprets a regular ComfyUI LDR `IMAGE` as an equirectangular/Lat-Long panorama.
+- Renders an interactive perspective view directly inside the node using WebGL 2.
+- Dragging rotates the view horizontally and vertically.
+- The mouse wheel changes the field of view.
+- **Reset** restores the default yaw, pitch, and field of view.
+- The **fullscreen** button expands the interactive view to the browser display; press **Esc** or the button again to exit.
+- Batch navigation buttons appear when the input contains multiple images.
+- The hidden yaw, pitch, and FOV values track the interactive camera and are used to render the `view` output at `view_width` × `view_height`.
+
+Notes:
+
+- Rotation and zoom do not alter the original `image` output; they define the perspective rendered by `view`.
+- Perspective rendering is skipped when the `view` output is not connected.
+- The viewer state is stored with the node in the workflow.
+- The input should normally use a 2:1 equirectangular image for correct spherical proportions.
+- The preview is encoded through ComfyUI's temporary image directory and is not saved persistently.
+
+### Pepe Equirectangular to Cubemap Strip
+
+Category: `PepeUtils/image`
+
+Inputs:
+
+- `image`
+- `face_size` (width of each face; `0` divides the panorama width by `side_count`)
+- `side_count` (number of faces around the horizon; defaults to `4`)
+- `vertical_fov` (vertical field of view; defaults to `90°`)
+
+Outputs:
+
+- `cubemap_strip`
+
+What it does:
+
+- Converts an equirectangular panorama into perspective faces arranged around the horizon.
+- With four sides, produces the familiar 90-degree `front`, `right`, `back`, `left` cubemap strip.
+- With more sides, uses a narrower `360 / side_count` degree horizontal field of view for each face, approximating a smooth cylinder with progressively smaller direction changes at the boundaries.
+- Calculates the face height from `vertical_fov` so increasing `side_count` does not crop the top and bottom of the selected view.
+- Omits the top and bottom and produces an image whose final and first edges meet continuously when tiled horizontally.
+
+Notes:
+
+- Automatic sizing keeps the complete strip at the panorama width by dividing it evenly among the faces.
+- Four sides at the default 90° vertical FOV still produce the original 4:1 cubemap strip.
+- At higher side counts, faces become taller than they are wide. This preserves vertical coverage and equal pinhole-camera pixel scale instead of stretching the image.
+- The input should normally use a 2:1 equirectangular layout.
+
+### Pepe Equirectangular to Cylindrical
+
+Category: `PepeUtils/image`
+
+Inputs:
+
+- `image`
+- `output_width` (`0` preserves the panorama width)
+- `output_height` (`0` calculates square distances on the unrolled cylinder surface)
+- `max_latitude` (north/south coverage; defaults to approximately 57.52°)
+
+Outputs:
+
+- `cylindrical`
+
+What it does:
+
+- Projects the panorama onto the side of a vertical, constant-radius cylinder.
+- Unrolls the cylinder into one continuous image with seamless left/right wrapping.
+- Uses longitude for horizontal position and physical cylinder height for vertical position.
+- Keeps equal horizontal and vertical surface distances per pixel when `output_height` is `0`.
+
+Notes:
+
+- The default latitude and automatic sizing preserve the dimensions of a normal 2:1 panorama.
+- Increasing `max_latitude` includes more of the poles and increases the automatically calculated height.
+- A finite cylindrical image cannot include the exact north and south poles because their cylinder height approaches infinity.
+
+### Pepe Break
+
+Category: `PepeUtils/flow`
+
+Inputs:
+
+- `value` (any connected ComfyUI data type)
+- `enabled` (`CONTINUE` passes the value; `BREAK` blocks the branch)
+
+Output:
+
+- `value`
+
+What it does:
+
+- Passes its input through unchanged in `CONTINUE` mode.
+- Uses ComfyUI's silent execution blocker in `BREAK` mode, so downstream nodes on that route do not execute or report an error.
+- Treats `value` as a lazy input. If its upstream nodes are used only by this branch, they are not evaluated while the break is active.
+
+Notes:
+
+- The break affects only nodes downstream of its output. Independent workflow branches continue normally.
+- Place it before the first node of the section you want to disable.
+
+### Pepe Console Print
+
+Category: `PepeUtils/utils`
+
+Inputs:
+
+- `value` (any connected ComfyUI data type)
+- `message` (the text to print)
+- `color` (terminal text color, including standard and bright variants)
+
+Output:
+
+- `value` (the exact input value, unchanged)
+
+What it does:
+
+- Prints `message` to the terminal or CMD window running the ComfyUI server.
+- Executes on every queued workflow instead of letting ComfyUI reuse a cached print.
+- Routes images, latents, conditioning, strings, numbers, and other connected types through unchanged.
 
 ### Anime PromptGen
 
@@ -160,6 +321,32 @@ Notes:
 - A saved workflow retains the temporary filename, not the image itself. Paste the image again after restarting ComfyUI.
 - The clipboard button depends on browser clipboard permission. `Ctrl+V` remains available when direct clipboard access is unavailable.
 - Exactly one Pepe Paste Image node must be selected for the `Ctrl+V` shortcut.
+
+### Pepe Load Images From Folder
+
+Category: `Pepe Utils/image`
+
+Inputs:
+
+- `folder`
+- `image_load_cap` (`0` loads every image)
+- `select_every_nth`
+
+Outputs:
+
+- `images` (list)
+- `masks` (list)
+- `file_name` (list, including each original extension)
+- `image_count`
+
+What it does:
+
+- Loads supported images from an arbitrary local folder without routing absolute paths through ComfyUI's restricted annotated-file resolver.
+- Sorts filenames case-insensitively so image, mask, and filename lists remain deterministic and synchronized.
+- Emits list outputs so downstream ComfyUI nodes process each file independently instead of receiving one tensor batch.
+- Supports BMP, GIF, JPEG, PNG, TIFF, and WebP files.
+
+For sidecar captions, send `file_name` through a regex replacement such as `\.[^.]+$` → an empty string, then connect the result and generated text to a text-saving node configured for `.txt`.
 
 ### Pepe Scale Image By
 
@@ -271,16 +458,27 @@ ComfyUI-PepeUtils/
 ├─ AnimePromptGen.py
 ├─ assets/
 │  └─ nodes.png
+├─ EquirectangularPreview.py
 ├─ LoadImageCropped.py
 ├─ PasteImage.py
+├─ PepeImageFilter.py
+├─ pepe_image_filter_messaging.py
 ├─ PepeResizeImage.py
 ├─ PepeScaleImageBy.py
 ├─ StrideScaleSize.py
 ├─ examples/
 │  └─ minimal_workflow.json
+├─ third_party/
+│  └─ cg-image-filter/
+│     ├─ LICENSE
+│     └─ NOTICE.md
 └─ web/
+   ├─ equirectangular_preview.js
+   ├─ panorama_renderer.js
    ├─ load_image_cropped.js
-   └─ paste_image.js
+   ├─ paste_image.js
+   └─ pepe_image_filter/
+      └─ image_filter.js (plus supporting UI assets)
 ```
 
 ## Example Workflow
